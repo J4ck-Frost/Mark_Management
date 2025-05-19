@@ -1,0 +1,97 @@
+package com.examManagement.MarkManagementService.service;
+
+import com.examManagement.MarkManagementService.dto.MarkRequest;
+import com.examManagement.MarkManagementService.dto.MarkResponse;
+import com.examManagement.MarkManagementService.entity.Mark;
+import com.examManagement.MarkManagementService.exception.ResourceNotFoundException;
+import com.examManagement.MarkManagementService.mapper.MarkMapper;
+import com.examManagement.MarkManagementService.repository.MarkRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class MarkServiceImpl implements MarkService{
+    private final MarkRepository markRepository;
+    @Override
+    public MarkResponse registerMark(String candidateId, String examId) {
+        if (markRepository.existsByCandidateIdAndExamId(candidateId, examId)){
+            throw new IllegalArgumentException("Candidate is already registered for this exam");
+        }
+        Mark mark= new Mark();
+        mark.setCandidateId(candidateId);
+        mark.setExamId(examId);
+        mark.setRegisteredAt(LocalDateTime.now());
+        markRepository.save(mark);
+        return MarkMapper.toResponse(mark);
+    }
+
+    @Override
+    public List<MarkResponse> findAllMark() {
+        return markRepository.findAll().stream()
+                .map(MarkMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public MarkResponse findMarkById(String id) {
+        Mark mark = markRepository.findById(id)
+                .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
+        return MarkMapper.toResponse(mark);
+    }
+
+    @Override
+    public List<MarkResponse> findMarkByExamId(String examId) {
+        return markRepository.findMarkByExamId(examId).stream()
+                .map(MarkMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<MarkResponse> findMarkByExaminerId(String examinerId) {
+        return markRepository.findMarkByExamId(examinerId).stream()
+                .map(MarkMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<MarkResponse> findMarkByCandidateId(String candidateId) {
+        return markRepository.findMarkByExamId(candidateId).stream()
+                .map(MarkMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public MarkResponse findMarkByCandidateIdAndExamId(String candidateId, String examId) {
+        Mark mark = markRepository.findMarkByCandidateIdAndExamId(candidateId, examId)
+                .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
+        return null;
+    }
+
+    @Override
+    public MarkResponse updateMark(String id, MarkRequest request) {
+        Mark updatedMark = markRepository.findById(id)
+                .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
+        if (updatedMark.isFinalized()) {
+            throw new IllegalArgumentException("Cannot change finalized mark");
+        }
+        updatedMark.setScore(request.getScore());
+        updatedMark.setScoredAt(LocalDateTime.now());
+        updatedMark.setExaminerId(request.getExaminerId());
+        markRepository.save(updatedMark);
+        return MarkMapper.toResponse(updatedMark);
+    }
+
+    @Override
+    public void deleteMark(String id) {
+        Mark mark = markRepository.findById(id)
+                .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
+        markRepository.deleteById(id);
+    }
+}

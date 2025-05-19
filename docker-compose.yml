@@ -1,0 +1,58 @@
+services:
+  mongo-exam:
+    image: mongo:6.0
+    ports: ["27019:27017"]
+    volumes: [exam-data:/data/db]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"  # Rotate after 10MB
+        max-file: "3"    # Keep 3 log files max
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root  # Good to keep auth!
+      MONGO_INITDB_ROOT_PASSWORD: example
+    restart: unless-stopped
+    healthcheck:  # Add health checks
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  mongo-candidate:
+    image: mongo:6.0
+    ports: ["27018:27017"]
+    volumes: [candidate-data:/data/db]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+
+  mongo-mark:
+    image: mongo:6.0
+    ports: ["27020:27017"]
+    volumes: [mark-data:/data/db]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+
+
+  kafka:
+    image: apache/kafka:3.7.0  # Official image with KRaft support
+    ports: ["9092:9092", "9093:9093"]
+    environment:
+      KAFKA_KRAFT_CLUSTER_ID: "kafka-cluster-1"  # Required for KRaft
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: "controller,broker"  # Combined role for single-node
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"  # Self-voting
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"  # For external clients
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+    restart: unless-stopped
+    volumes:
+      - kafka-data:/tmp/kraft-combined-logs  # KRaft storage
+
+volumes:
+  exam-data:
+  candidate-data:
+  mark-data:
+  kafka-data:
