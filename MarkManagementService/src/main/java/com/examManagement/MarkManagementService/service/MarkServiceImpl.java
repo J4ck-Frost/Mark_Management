@@ -7,6 +7,7 @@ import com.examManagement.MarkManagementService.exception.ResourceNotFoundExcept
 import com.examManagement.MarkManagementService.mapper.MarkMapper;
 import com.examManagement.MarkManagementService.repository.MarkRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,8 +20,23 @@ import java.util.stream.Collectors;
 @Transactional
 public class MarkServiceImpl implements MarkService{
     private final MarkRepository markRepository;
+
+    @KafkaListener(
+            topics = "exam-registration-events",
+            groupId = "mark-service-group"
+    )
     @Override
-    public MarkResponse registerMark(String candidateId, String examId) {
+    public void registerMark(String message) {
+        System.out.println("Nhận event: " + message); // Log để debug
+
+        String[] parts = message.split(":");
+        if (parts.length != 2) {
+            System.err.println("Message không hợp lệ: " + message);
+            return;
+        }
+
+        String candidateId = parts[0];
+        String examId = parts[1];
         if (markRepository.existsByCandidateIdAndExamId(candidateId, examId)){
             throw new IllegalArgumentException("Candidate is already registered for this exam");
         }
@@ -29,7 +45,7 @@ public class MarkServiceImpl implements MarkService{
         mark.setExamId(examId);
         mark.setRegisteredAt(LocalDateTime.now());
         markRepository.save(mark);
-        return MarkMapper.toResponse(mark);
+        System.out.println("Đã tạo đăng ký kì thi thành công");
     }
 
     @Override

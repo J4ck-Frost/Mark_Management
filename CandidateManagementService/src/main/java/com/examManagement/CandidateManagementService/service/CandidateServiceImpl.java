@@ -61,7 +61,9 @@ public class CandidateServiceImpl implements CandidateService{
         updatedCandidate.setPhoneNumber(request.getPhoneNumber());
         updatedCandidate.setEmail(request.getEmail());
         updatedCandidate.setGender(request.isGender());
-        updatedCandidate.setExamIds(request.getExamIds());
+        List<String> listExamIds = updatedCandidate.getExamIds();
+        listExamIds.add(request.getExamId());
+        updatedCandidate.setExamIds(listExamIds);
         candidateRepository.save(updatedCandidate);
         return CandidateMapper.toResponse(updatedCandidate);
     }

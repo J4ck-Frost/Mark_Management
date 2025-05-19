@@ -19,10 +19,10 @@ public class MarkController {
     private final MarkService markService;
 
     // Record a new exam score (prevents duplicates)
-    @PostMapping
-    public ResponseEntity<MarkResponse> createMark(@RequestBody @Valid MarkRegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(markService.registerMark(request.getCandidateId(), request.getExamId()));
-    }
+//    @PostMapping
+//    public ResponseEntity<MarkResponse> createMark(@RequestBody @Valid MarkRegisterRequest request) {
+//        return ResponseEntity.status(HttpStatus.CREATED).body(markService.registerMark(request.getCandidateId(), request.getExamId()));
+//    }
 
     @GetMapping
     public ResponseEntity<List<MarkResponse>> getAllMarks(){

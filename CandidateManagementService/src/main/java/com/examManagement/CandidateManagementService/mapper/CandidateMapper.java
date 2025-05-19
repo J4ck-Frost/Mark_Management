@@ -4,6 +4,8 @@ import com.examManagement.CandidateManagementService.dto.CandidateRequest;
 import com.examManagement.CandidateManagementService.dto.CandidateResponse;
 import com.examManagement.CandidateManagementService.entity.Candidate;
 
+import java.util.List;
+
 public class CandidateMapper {
     public static Candidate toEntity(CandidateRequest request) {
         Candidate candidate = new Candidate();
@@ -11,7 +13,9 @@ public class CandidateMapper {
         candidate.setEmail(request.getEmail());
         candidate.setPhoneNumber(request.getPhoneNumber());
         candidate.setGender(request.isGender());
-        candidate.setExamIds(request.getExamIds());
+        List<String> listExamIds = candidate.getExamIds();
+        listExamIds.add(request.getExamId());
+        candidate.setExamIds(listExamIds);
         return candidate;
     }
 

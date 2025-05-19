@@ -6,6 +6,7 @@ import com.examManagement.CandidateManagementService.service.CandidateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.List;
 public class CandidateController {
 
         private final CandidateService candidateService;
+        private final KafkaTemplate<String, String > kafkaTemplate;
 
         @GetMapping
         public ResponseEntity<List<CandidateResponse>> getAllCandidates() {
@@ -24,7 +26,16 @@ public class CandidateController {
 
         @PostMapping
         public ResponseEntity<CandidateResponse> registerCandidate(@Valid @RequestBody CandidateRequest request) {
-            return ResponseEntity.ok(candidateService.registerCandidate(request));
+            CandidateResponse candidate = candidateService.registerCandidate(request);
+            try {
+                kafkaTemplate.send("exam-registration-events", candidate.getId() + ":" + request.getExamId()).get();
+                System.out.println("✅ Đã gửi message vào Kafka topic.");
+            } catch (Exception ex) {
+                System.err.println("❌ Lỗi khi gửi Kafka: " + ex.getMessage());
+            }
+
+
+            return ResponseEntity.ok(candidate);
         }
 
         @GetMapping("/{id}")
