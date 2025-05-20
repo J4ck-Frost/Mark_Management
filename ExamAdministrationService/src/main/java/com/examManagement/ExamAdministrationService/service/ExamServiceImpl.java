@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,15 +57,31 @@ public class ExamServiceImpl implements ExamService{
         updatedExam.setScheduledTime(request.getScheduledTime());
         updatedExam.setName(request.getName());
         updatedExam.setDuration(request.getDuration());
-        updatedExam.setAssignedExaminerId(request.getAssignedExaminerId());
+        updateAssignedExaminer(updatedExam, request.getAssignedExaminerId());
         examRepository.save(updatedExam);
         return ExamMapper.toResponse(updatedExam);
+    }
+
+    private void updateAssignedExaminer(Exam exam, List<String> examinerIds){
+        for (String examinerId: examinerIds) {
+            if (!examinerRepository.existsById(examinerId)) {
+                throw new ResourceNotFoundException("Examiner not found with ID: " + examinerId);
+            }
+            if (!examinerRepository.existsByIdAndActiveTrue(examinerId)){
+                throw new IllegalStateException("Cannot assign inactive examiner");
+            }
+        }
+        if (!new HashSet<>(examinerIds).equals(new HashSet<>(exam.getAssignedExaminerId()))) {
+            exam.setAssignedExaminerId(new ArrayList<>(examinerIds));
+        }
     }
 
     @Override
     public void deleteExam(String id) {
         Exam deletedExam = examRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
+        if (deletedExam.getStatus() == ExamStatus.PUBLISHED)
+            throw new IllegalStateException("Only DRAFT exams can be deleted");
         examRepository.delete(deletedExam);
     }
 
@@ -75,45 +92,6 @@ public class ExamServiceImpl implements ExamService{
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public ExamResponse addExaminerToExam(String examId, String examinerId) {
-        Exam exam = examRepository.findById(examId)
-                .orElseThrow(() -> new ResourceNotFoundException("Exam not found with ID: " + examId));
-
-        if (!examinerRepository.existsById(examinerId)) {
-            throw new ResourceNotFoundException("Examiner not found with ID: " + examinerId);
-        }
-
-        // Check if examiner is already assigned
-        if (exam.getAssignedExaminerId() != null &&
-                exam.getAssignedExaminerId().contains(examinerId)) {
-            throw new IllegalArgumentException("Examiner is already assigned to this exam");
-        }
-
-        if (exam.getAssignedExaminerId() == null) {
-            exam.setAssignedExaminerId(new ArrayList<>());
-        }
-        exam.getAssignedExaminerId().add(examinerId);
-
-        Exam updatedExam = examRepository.save(exam);
-        return ExamMapper.toResponse(updatedExam);
-    }
-
-    @Override
-    public ExamResponse removeExaminerFromExam(String examId, String examinerId) {
-        Exam exam = examRepository.findById(examId)
-                .orElseThrow(() -> new ResourceNotFoundException("Exam not found with ID: " + examId));
-
-        // Check if examiner is assigned
-        if (exam.getAssignedExaminerId() == null ||
-                !exam.getAssignedExaminerId().contains(examinerId)) {
-            throw new IllegalArgumentException("Examiner is not assigned to this exam");
-        }
-
-        exam.getAssignedExaminerId().remove(examinerId);
-        Exam updatedExam = examRepository.save(exam);
-        return ExamMapper.toResponse(updatedExam);
-    }
 
     @Override
     public ExamResponse publishExam(String examId) {
@@ -161,7 +139,6 @@ public class ExamServiceImpl implements ExamService{
     public ExamResponse revertToDraft(String examId) {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
-
         exam.setStatus(ExamStatus.DRAFT);
         examRepository.save(exam);
         return ExamMapper.toResponse(exam);

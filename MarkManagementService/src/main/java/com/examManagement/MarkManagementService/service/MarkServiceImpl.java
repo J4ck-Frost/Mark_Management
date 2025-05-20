@@ -87,7 +87,7 @@ public class MarkServiceImpl implements MarkService{
     public MarkResponse findMarkByCandidateIdAndExamId(String candidateId, String examId) {
         Mark mark = markRepository.findMarkByCandidateIdAndExamId(candidateId, examId)
                 .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
-        return null;
+        return MarkMapper.toResponse(mark);
     }
 
     @Override
@@ -102,6 +102,29 @@ public class MarkServiceImpl implements MarkService{
         updatedMark.setExaminerId(request.getExaminerId());
         markRepository.save(updatedMark);
         return MarkMapper.toResponse(updatedMark);
+    }
+
+    @KafkaListener(
+            topics = "exam-unregistration-events",
+            groupId = "mark-service-group"
+    )
+    private void deleteKafkaMark(String message) {
+        System.out.println("Nhận unregistration event: " + message);
+
+        String[] parts = message.split(":");
+        if (parts.length != 2) {
+            System.err.println("Message không hợp lệ: " + message);
+            return;
+        }
+
+        String candidateId = parts[0];
+        String examId = parts[1];
+
+        Mark mark= markRepository.findMarkByCandidateIdAndExamId(candidateId, examId)
+                .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
+
+        markRepository.delete(mark);
+        System.out.println("Đã hủy đăng ký thành công");
     }
 
     @Override

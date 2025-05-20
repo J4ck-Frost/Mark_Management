@@ -10,6 +10,6 @@ public interface ExaminerService {
     List<ExaminerResponse> getAllExaminers();
     ExaminerResponse getExaminerById(String id);
     ExaminerResponse updateExaminer(String id, ExaminerRequest request);
-    void deleteExaminer(String id);
+    ExaminerResponse inactiveExaminer(String id);
     void validateExaminerIds(List<String> examinerIds);
 }

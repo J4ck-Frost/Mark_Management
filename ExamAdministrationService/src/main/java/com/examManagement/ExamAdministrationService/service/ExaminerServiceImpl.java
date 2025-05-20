@@ -3,8 +3,10 @@ package com.examManagement.ExamAdministrationService.service;
 import com.examManagement.ExamAdministrationService.Mapper.ExaminerMapper;
 import com.examManagement.ExamAdministrationService.dto.ExaminerRequest;
 import com.examManagement.ExamAdministrationService.dto.ExaminerResponse;
+import com.examManagement.ExamAdministrationService.entity.Exam;
 import com.examManagement.ExamAdministrationService.entity.Examiner;
 import com.examManagement.ExamAdministrationService.exception.ResourceNotFoundException;
+import com.examManagement.ExamAdministrationService.repository.ExamRepository;
 import com.examManagement.ExamAdministrationService.repository.ExaminerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class ExaminerServiceImpl implements ExaminerService{
     private final ExaminerRepository examinerRepository;
+    private final ExamRepository examRepository;
 
 
     @Override
@@ -67,11 +70,21 @@ public class ExaminerServiceImpl implements ExaminerService{
         return ExaminerMapper.toResponse(updatedExaminer);
     }
 
+
     @Override
-    public void deleteExaminer(String id) {
+    public ExaminerResponse inactiveExaminer(String id){
         Examiner examiner = examinerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Teacher not found"));
-        examinerRepository.delete(examiner);
+        List<Exam> assignedExams = examRepository.findByAssignedExaminerId(id);
+        if (!assignedExams.isEmpty()) {
+            String assignedExamIds = assignedExams.stream()
+                    .map(Exam::getId)
+                    .collect(Collectors.joining(", "));
+            throw new IllegalStateException("Examiner is assigned to exam(s): " + assignedExamIds);
+        }
+        examiner.setActive(false);
+        examinerRepository.save(examiner);
+        return ExaminerMapper.toResponse(examiner);
     }
 
     public void validateExaminerIds(List<String> examinerIds) {

@@ -26,6 +26,7 @@ public class ExamRequest {
     private Integer duration;
     @NotBlank(message = "Location cannot be blank")
     private String location;
+
     @NotNull(message = "Examiner IDs list cannot be null")
     @NotEmpty(message = "Examiner IDs list cannot be empty")
     private List<

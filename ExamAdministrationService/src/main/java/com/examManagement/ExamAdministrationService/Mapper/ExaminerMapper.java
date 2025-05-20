@@ -19,6 +19,7 @@ public class ExaminerMapper {
         response.setName(examiner.getName());
         response.setEmail(examiner.getEmail());
         response.setPhoneNumber(examiner.getPhoneNumber());
+        response.setActive(examiner.isActive());
         return response;
     }
 }

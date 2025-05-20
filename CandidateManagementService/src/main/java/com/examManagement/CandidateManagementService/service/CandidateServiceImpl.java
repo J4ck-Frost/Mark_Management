@@ -2,11 +2,13 @@ package com.examManagement.CandidateManagementService.service;
 
 import com.examManagement.CandidateManagementService.dto.CandidateRequest;
 import com.examManagement.CandidateManagementService.dto.CandidateResponse;
+import com.examManagement.CandidateManagementService.dto.CandidateUpdateInfoRequest;
 import com.examManagement.CandidateManagementService.entity.Candidate;
 import com.examManagement.CandidateManagementService.exception.ResourceNotFoundException;
 import com.examManagement.CandidateManagementService.mapper.CandidateMapper;
 import com.examManagement.CandidateManagementService.repository.CandidateRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +19,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class CandidateServiceImpl implements CandidateService{
+    private final KafkaTemplate<String, String > kafkaTemplate;
     private final CandidateRepository candidateRepository;
+
     @Override
     public List<CandidateResponse> getAllCandidates() {
         return candidateRepository.findAll().stream()
@@ -27,14 +31,42 @@ public class CandidateServiceImpl implements CandidateService{
 
     @Override
     public CandidateResponse registerCandidate(CandidateRequest request) {
-        if (candidateRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already exists");
+        if (candidateRepository.existsByIdCard(request.getIdCard())) {
+            Candidate candidate = candidateRepository.findByIdCard(request.getIdCard());
+            if (isCandidateInfoChanged(candidate, request)) {
+                CandidateResponse candidateResponse = updateCandidateInfo(candidate.getId(), CandidateMapper.toUpdateRequest(request));
+                sendKafkaEvent(candidate.getId(), request.getExamId(), "exam-registration-events");
+                return candidateResponse;
+            } else {
+                List<String> listExamIds = candidate.getExamIds();
+                listExamIds.add(request.getExamId());
+                candidate.setExamIds(listExamIds);
+                candidateRepository.save(candidate);
+                sendKafkaEvent(candidate.getId(), request.getExamId(), "exam-registration-events");
+                return CandidateMapper.toResponse(candidate);
+            }
         }
-        if (candidateRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new IllegalArgumentException("Phone Number already exists");
-        }
+        // Nếu ứng viên chưa tồn tại
         Candidate candidate = CandidateMapper.toEntity(request);
         candidateRepository.save(candidate);
+        sendKafkaEvent(candidate.getId(), request.getExamId(), "exam-registration-events");
+        return CandidateMapper.toResponse(candidate);
+    }
+
+
+
+    @Override
+    public CandidateResponse unregisterCandidate(String examId, String candidateId){
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
+        List<String> listExamIds = candidate.getExamIds();
+        if (!listExamIds.contains(examId)) {
+            throw new IllegalArgumentException("Candidate is not registered for this exam");
+        }
+        listExamIds.remove(examId);
+        candidate.setExamIds(listExamIds);
+        candidateRepository.save(candidate);
+        sendKafkaEvent(candidateId, examId, "exam-unregistration-events");
         return CandidateMapper.toResponse(candidate);
     }
 
@@ -46,9 +78,13 @@ public class CandidateServiceImpl implements CandidateService{
     }
 
     @Override
-    public CandidateResponse updateCandidate(String id, CandidateRequest request) {
+    public CandidateResponse updateCandidateInfo(String id, CandidateUpdateInfoRequest request) {
         Candidate updatedCandidate = candidateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
+        if (!updatedCandidate.getIdCard().equals(request.getIdCard()) &&
+                candidateRepository.existsByIdCard(request.getIdCard())) {
+            throw new IllegalArgumentException("Id card already exists");
+        }
         if (!updatedCandidate.getEmail().equals(request.getEmail()) &&
                 candidateRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
@@ -57,13 +93,12 @@ public class CandidateServiceImpl implements CandidateService{
                 candidateRepository.existsByPhoneNumber(request.getPhoneNumber())) {
             throw new IllegalArgumentException("Phone Number already exists");
         }
+
+        updatedCandidate.setIdCard(request.getIdCard());
         updatedCandidate.setFullName(request.getFullName());
         updatedCandidate.setPhoneNumber(request.getPhoneNumber());
         updatedCandidate.setEmail(request.getEmail());
         updatedCandidate.setGender(request.isGender());
-        List<String> listExamIds = updatedCandidate.getExamIds();
-        listExamIds.add(request.getExamId());
-        updatedCandidate.setExamIds(listExamIds);
         candidateRepository.save(updatedCandidate);
         return CandidateMapper.toResponse(updatedCandidate);
     }
@@ -75,16 +110,19 @@ public class CandidateServiceImpl implements CandidateService{
         candidateRepository.delete(candidate);
     }
 
-    @Override
-    public void validateCandidateById(List<String> candidateIds) {
-        List<String> missingIds = candidateIds.stream()
-                .filter(id -> !candidateRepository.existsById(id))
-                .toList();
+    private boolean isCandidateInfoChanged(Candidate candidate, CandidateRequest request) {
+        return !candidate.getFullName().equals(request.getFullName()) ||
+                !candidate.getEmail().equals(request.getEmail()) ||
+                !candidate.getPhoneNumber().equals(request.getPhoneNumber()) ||
+                candidate.isGender() != request.isGender();
+    }
 
-        if (!missingIds.isEmpty()) {
-            throw new ResourceNotFoundException(
-                    "Examiners not found with IDs: " + missingIds
-            );
+    private void sendKafkaEvent(String candidateId, String examId, String topic) {
+        try {
+            kafkaTemplate.send(topic, candidateId + ":" + examId);
+            System.out.println("✅ Đã gửi message vào Kafka topic.");
+        } catch (Exception ex) {
+            System.err.println("❌ Lỗi khi gửi Kafka: " + ex.getMessage());
         }
     }
 }

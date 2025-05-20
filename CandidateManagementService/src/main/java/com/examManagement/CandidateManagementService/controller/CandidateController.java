@@ -2,11 +2,11 @@ package com.examManagement.CandidateManagementService.controller;
 
 import com.examManagement.CandidateManagementService.dto.CandidateRequest;
 import com.examManagement.CandidateManagementService.dto.CandidateResponse;
+import com.examManagement.CandidateManagementService.dto.CandidateUpdateInfoRequest;
 import com.examManagement.CandidateManagementService.service.CandidateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,24 +17,16 @@ import java.util.List;
 public class CandidateController {
 
         private final CandidateService candidateService;
-        private final KafkaTemplate<String, String > kafkaTemplate;
+
 
         @GetMapping
         public ResponseEntity<List<CandidateResponse>> getAllCandidates() {
             return ResponseEntity.ok(candidateService.getAllCandidates());
         }
 
-        @PostMapping
+        @PostMapping("/register")
         public ResponseEntity<CandidateResponse> registerCandidate(@Valid @RequestBody CandidateRequest request) {
             CandidateResponse candidate = candidateService.registerCandidate(request);
-            try {
-                kafkaTemplate.send("exam-registration-events", candidate.getId() + ":" + request.getExamId()).get();
-                System.out.println("✅ Đã gửi message vào Kafka topic.");
-            } catch (Exception ex) {
-                System.err.println("❌ Lỗi khi gửi Kafka: " + ex.getMessage());
-            }
-
-
             return ResponseEntity.ok(candidate);
         }
 
@@ -44,10 +36,14 @@ public class CandidateController {
         }
 
         @PutMapping("/{id}")
-        public ResponseEntity<CandidateResponse> updateCandidate(@PathVariable String id, @Valid @RequestBody CandidateRequest request) {
-            return ResponseEntity.ok(candidateService.updateCandidate(id, request));
+        public ResponseEntity<CandidateResponse> updateCandidate(@PathVariable String id, @Valid @RequestBody CandidateUpdateInfoRequest request) {
+            return ResponseEntity.ok(candidateService.updateCandidateInfo(id, request));
         }
 
+        @PutMapping("/{examId}/{candidateId}/unregister")
+        public ResponseEntity<CandidateResponse> unregisterCandidate(@PathVariable String examId, @PathVariable String candidateId) {
+            return ResponseEntity.ok(candidateService.unregisterCandidate(examId, candidateId));
+        }
         @DeleteMapping("/{id}")
         public ResponseEntity<Void> deleteCandidate(@PathVariable String id) {
             candidateService.deleteCandidate(id);

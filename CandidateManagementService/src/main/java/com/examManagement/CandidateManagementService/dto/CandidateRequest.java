@@ -3,6 +3,7 @@ package com.examManagement.CandidateManagementService.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CandidateRequest {
+    @Pattern(regexp = "\\d{12}")
+    private String idCard;
     @NotBlank(message = "Full name cannot be blank")
     private String fullName;
     @Pattern(regexp = "\\d{10}")
