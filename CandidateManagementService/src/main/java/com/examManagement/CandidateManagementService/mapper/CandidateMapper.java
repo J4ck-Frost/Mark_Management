@@ -42,16 +42,4 @@ public class CandidateMapper {
         updateInfoRequest.setGender(request.isGender());
         return  updateInfoRequest;
     }
-
-    public static Candidate toUpdatedEntity(CandidateUpdateInfoRequest request) {
-        Candidate candidate = new Candidate();
-        candidate.setIdCard(request.getIdCard());
-        candidate.setFullName(request.getFullName());
-        candidate.setEmail(request.getEmail());
-        candidate.setPhoneNumber(request.getPhoneNumber());
-        candidate.setGender(request.isGender());
-        return candidate;
-    }
-
-
 }

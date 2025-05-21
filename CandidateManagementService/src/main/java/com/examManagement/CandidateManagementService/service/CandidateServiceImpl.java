@@ -1,8 +1,10 @@
 package com.examManagement.CandidateManagementService.service;
 
+import com.examManagement.CandidateManagementService.client.ExamServiceClient;
 import com.examManagement.CandidateManagementService.dto.CandidateRequest;
 import com.examManagement.CandidateManagementService.dto.CandidateResponse;
 import com.examManagement.CandidateManagementService.dto.CandidateUpdateInfoRequest;
+import com.examManagement.CandidateManagementService.dto.ExamResponse;
 import com.examManagement.CandidateManagementService.entity.Candidate;
 import com.examManagement.CandidateManagementService.exception.ResourceNotFoundException;
 import com.examManagement.CandidateManagementService.mapper.CandidateMapper;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
 public class CandidateServiceImpl implements CandidateService{
     private final KafkaTemplate<String, String > kafkaTemplate;
     private final CandidateRepository candidateRepository;
+    private final ExamServiceClient examServiceClient;
 
     @Override
     public List<CandidateResponse> getAllCandidates() {
@@ -31,6 +35,10 @@ public class CandidateServiceImpl implements CandidateService{
 
     @Override
     public CandidateResponse registerCandidate(CandidateRequest request) {
+        ExamResponse exam = examServiceClient.getExamById(request.getExamId());
+        if (!Objects.equals(exam.getStatus(), "PUBLISHED")) {
+            throw new IllegalStateException("You can only register for a published exam.");
+        }
         if (candidateRepository.existsByIdCard(request.getIdCard())) {
             Candidate candidate = candidateRepository.findByIdCard(request.getIdCard());
             if (isCandidateInfoChanged(candidate, request)) {
@@ -57,6 +65,13 @@ public class CandidateServiceImpl implements CandidateService{
 
     @Override
     public CandidateResponse unregisterCandidate(String examId, String candidateId){
+        ExamResponse exam = examServiceClient.getExamById(examId);
+        if (Objects.equals(exam.getStatus(), "COMPLETED")) {
+            throw new IllegalStateException("You cannot unregister for a completed exam.");
+        }
+        else if (Objects.equals(exam.getStatus(), "SCORED")) {
+            throw new IllegalStateException("Exam is being scored, cannot unregister");
+        }
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
         List<String> listExamIds = candidate.getExamIds();

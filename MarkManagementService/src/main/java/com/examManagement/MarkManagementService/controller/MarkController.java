@@ -1,12 +1,10 @@
 package com.examManagement.MarkManagementService.controller;
 
-import com.examManagement.MarkManagementService.dto.MarkRegisterRequest;
 import com.examManagement.MarkManagementService.dto.MarkRequest;
 import com.examManagement.MarkManagementService.dto.MarkResponse;
 import com.examManagement.MarkManagementService.service.MarkService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,12 +15,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MarkController {
     private final MarkService markService;
-
-    // Record a new exam score (prevents duplicates)
-//    @PostMapping
-//    public ResponseEntity<MarkResponse> createMark(@RequestBody @Valid MarkRegisterRequest request) {
-//        return ResponseEntity.status(HttpStatus.CREATED).body(markService.registerMark(request.getCandidateId(), request.getExamId()));
-//    }
 
     @GetMapping
     public ResponseEntity<List<MarkResponse>> getAllMarks(){
@@ -60,6 +52,11 @@ public class MarkController {
             @PathVariable String examId
     ) {
         return ResponseEntity.ok(markService.findMarkByCandidateIdAndExamId(candidateId, examId));
+    }
+
+    @GetMapping("/{examId}/finalized")
+    public ResponseEntity<Boolean> getIsFinalizedByExamId(@PathVariable String examId){
+        return ResponseEntity.ok(markService.checkAllFinalizedMarkByExamId(examId));
     }
 
     @PutMapping("/{id}")

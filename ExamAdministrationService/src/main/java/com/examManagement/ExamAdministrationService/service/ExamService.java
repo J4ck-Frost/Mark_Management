@@ -2,7 +2,6 @@ package com.examManagement.ExamAdministrationService.service;
 
 import com.examManagement.ExamAdministrationService.dto.ExamRequest;
 import com.examManagement.ExamAdministrationService.dto.ExamResponse;
-import com.examManagement.ExamAdministrationService.entity.Exam;
 
 import java.util.List;
 
@@ -14,6 +13,7 @@ public interface ExamService {
     void deleteExam(String id);
     List<ExamResponse> getExamsByExaminerId(String examinerId);
     ExamResponse publishExam(String examId);
+    ExamResponse scoreExam(String examId);
     ExamResponse completeExam(String examId);
     ExamResponse cancelExam(String examId);
     ExamResponse revertToDraft(String examId);

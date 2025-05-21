@@ -1,5 +1,7 @@
 package com.examManagement.MarkManagementService.service;
 
+import com.examManagement.MarkManagementService.client.ExamServiceClient;
+import com.examManagement.MarkManagementService.dto.ExamResponse;
 import com.examManagement.MarkManagementService.dto.MarkRequest;
 import com.examManagement.MarkManagementService.dto.MarkResponse;
 import com.examManagement.MarkManagementService.entity.Mark;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,6 +23,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class MarkServiceImpl implements MarkService{
     private final MarkRepository markRepository;
+    private final ExamServiceClient examServiceClient;
 
     @KafkaListener(
             topics = "exam-registration-events",
@@ -94,14 +98,41 @@ public class MarkServiceImpl implements MarkService{
     public MarkResponse updateMark(String id, MarkRequest request) {
         Mark updatedMark = markRepository.findById(id)
                 .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
+        ExamResponse exam = examServiceClient.getExamById(updatedMark.getExamId());
+        if (Objects.equals(exam.getStatus(), "COMPLETED")) {
+            throw new IllegalStateException("You cannot change mark for a completed exam.");
+        }
+        if (Objects.equals(exam.getStatus(), "PUBLISHED")) {
+            throw new IllegalStateException("Exam must be in SCORED state to update scores");
+        }
         if (updatedMark.isFinalized()) {
-            throw new IllegalArgumentException("Cannot change finalized mark");
+            throw new IllegalStateException("Cannot change finalized mark");
         }
         updatedMark.setScore(request.getScore());
         updatedMark.setScoredAt(LocalDateTime.now());
         updatedMark.setExaminerId(request.getExaminerId());
         markRepository.save(updatedMark);
         return MarkMapper.toResponse(updatedMark);
+    }
+
+    @KafkaListener(
+            topics = "exam-complete-events",
+            groupId = "mark-service-group"
+    )
+    private List<MarkResponse> finalizeMarkByExamId(String message) {
+        System.out.println("Nhận complete exam event: " + message);
+        List<Mark> markList = markRepository.findMarkByExamId(message);
+        LocalDateTime now = LocalDateTime.now();
+        for (Mark mark : markList) {
+            if (!mark.isFinalized()) {
+                mark.setFinalized(true);
+                mark.setScoredAt(now);
+            }
+        }
+        List<Mark> updatedMarks = markRepository.saveAll(markList);
+        return updatedMarks.stream()
+                .map(MarkMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @KafkaListener(
@@ -125,6 +156,11 @@ public class MarkServiceImpl implements MarkService{
 
         markRepository.delete(mark);
         System.out.println("Đã hủy đăng ký thành công");
+    }
+
+    @Override
+    public boolean checkAllFinalizedMarkByExamId(String examId){
+        return markRepository.existsByExamIdAndFinalizedFalse(examId);
     }
 
     @Override

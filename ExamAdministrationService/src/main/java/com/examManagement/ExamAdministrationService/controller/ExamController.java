@@ -58,6 +58,11 @@ public class ExamController {
         return ResponseEntity.ok(examService.publishExam(id));
     }
 
+    @PostMapping("/{id}/score")
+    public ResponseEntity<ExamResponse> scoreExam(@PathVariable String id) {
+        return ResponseEntity.ok(examService.scoreExam(id));
+    }
+
     @PostMapping("/{id}/complete")
     public ResponseEntity<ExamResponse> completeExam(@PathVariable String id) {
         return ResponseEntity.ok(examService.completeExam(id));

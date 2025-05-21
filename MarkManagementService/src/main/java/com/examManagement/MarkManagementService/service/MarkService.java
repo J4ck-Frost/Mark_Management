@@ -14,6 +14,7 @@ public interface MarkService {
     List<MarkResponse> findMarkByCandidateId (String candidateId);
     MarkResponse findMarkByCandidateIdAndExamId (String candidateId, String examId);
     MarkResponse updateMark(String id, MarkRequest request);
+    boolean checkAllFinalizedMarkByExamId(String examId);
     void deleteMark(String id);
 
 }

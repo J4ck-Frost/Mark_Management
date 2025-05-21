@@ -14,10 +14,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class MarkRequest {
     @NotBlank
-    private String examId;
-    @NotBlank
-    private String candidateId;
-    @NotBlank
     private String examinerId;
     @Max(value = 10, message = "Score must be <=10")
     @Min(value = 0, message = "Score must be >=0")

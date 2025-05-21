@@ -9,6 +9,7 @@ import com.examManagement.ExamAdministrationService.exception.ResourceNotFoundEx
 import com.examManagement.ExamAdministrationService.repository.ExamRepository;
 import com.examManagement.ExamAdministrationService.repository.ExaminerRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class ExamServiceImpl implements ExamService{
     private final ExamRepository examRepository;
     private final ExaminerService examinerService;
     private final ExaminerRepository examinerRepository;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Override
     public ExamResponse createExam(ExamRequest request) {
@@ -81,7 +83,7 @@ public class ExamServiceImpl implements ExamService{
         Exam deletedExam = examRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
         if (deletedExam.getStatus() == ExamStatus.PUBLISHED)
-            throw new IllegalStateException("Only DRAFT exams can be deleted");
+            throw new IllegalStateException("Cannot delete published exams can be deleted");
         examRepository.delete(deletedExam);
     }
 
@@ -108,14 +110,28 @@ public class ExamServiceImpl implements ExamService{
     }
 
     @Override
-    public ExamResponse completeExam(String examId) {
+    public ExamResponse scoreExam(String examId) {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
 
         if (exam.getStatus() != ExamStatus.PUBLISHED) {
-            throw new IllegalStateException("Only PUBLISHED exams can be completed");
+            throw new IllegalStateException("Only PUBLISHED exams can be scored");
         }
 
+        exam.setStatus(ExamStatus.SCORED);
+        examRepository.save(exam);
+        return ExamMapper.toResponse(exam);
+    }
+
+    @Override
+    public ExamResponse completeExam(String examId) {
+        Exam exam = examRepository.findById(examId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
+
+        if (exam.getStatus() != ExamStatus.SCORED) {
+            throw new IllegalStateException("Only SCORED exams can be completed");
+        }
+        sendKafkaEvent(examId, "exam-complete-events");
         exam.setStatus(ExamStatus.COMPLETED);
         examRepository.save(exam);
         return ExamMapper.toResponse(exam);
@@ -172,4 +188,12 @@ public class ExamServiceImpl implements ExamService{
                     .toList();
         }
 
+    private void sendKafkaEvent(String examId, String topic) {
+        try {
+            kafkaTemplate.send(topic, examId);
+            System.out.println("✅ Đã gửi message vào Kafka topic.");
+        } catch (Exception ex) {
+            System.err.println("❌ Lỗi khi gửi Kafka: " + ex.getMessage());
+        }
+    }
 }
