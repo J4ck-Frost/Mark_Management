@@ -10,8 +10,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -30,5 +30,5 @@ public class Candidate {
     @Email
     private String email;
     private boolean gender;
-    private List<String> examIds = new ArrayList<>();
+    private Set<String> examIds = new HashSet<>();
 }

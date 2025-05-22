@@ -5,7 +5,7 @@ import com.examManagement.CandidateManagementService.dto.CandidateResponse;
 import com.examManagement.CandidateManagementService.dto.CandidateUpdateInfoRequest;
 import com.examManagement.CandidateManagementService.entity.Candidate;
 
-import java.util.List;
+import java.util.Set;
 
 public class CandidateMapper {
     public static Candidate toEntity(CandidateRequest request) {
@@ -15,7 +15,7 @@ public class CandidateMapper {
         candidate.setEmail(request.getEmail());
         candidate.setPhoneNumber(request.getPhoneNumber());
         candidate.setGender(request.isGender());
-        List<String> listExamIds = candidate.getExamIds();
+        Set<String> listExamIds = candidate.getExamIds();
         listExamIds.add(request.getExamId());
         candidate.setExamIds(listExamIds);
         return candidate;
@@ -41,5 +41,13 @@ public class CandidateMapper {
         updateInfoRequest.setFullName(request.getFullName());
         updateInfoRequest.setGender(request.isGender());
         return  updateInfoRequest;
+    }
+
+    public static void updateFromRequest(Candidate candidate, CandidateUpdateInfoRequest request){
+        candidate.setIdCard(request.getIdCard());
+        candidate.setFullName(request.getFullName());
+        candidate.setPhoneNumber(request.getPhoneNumber());
+        candidate.setEmail(request.getEmail());
+        candidate.setGender(request.isGender());
     }
 }

@@ -3,11 +3,10 @@ package com.examManagement.ExamAdministrationService.service;
 import com.examManagement.ExamAdministrationService.Mapper.ExaminerMapper;
 import com.examManagement.ExamAdministrationService.dto.ExaminerRequest;
 import com.examManagement.ExamAdministrationService.dto.ExaminerResponse;
-import com.examManagement.ExamAdministrationService.entity.Exam;
 import com.examManagement.ExamAdministrationService.entity.Examiner;
 import com.examManagement.ExamAdministrationService.exception.ResourceNotFoundException;
-import com.examManagement.ExamAdministrationService.repository.ExamRepository;
 import com.examManagement.ExamAdministrationService.repository.ExaminerRepository;
+import com.examManagement.ExamAdministrationService.validator.ExaminerValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,14 +19,13 @@ import java.util.stream.Collectors;
 @Transactional
 public class ExaminerServiceImpl implements ExaminerService{
     private final ExaminerRepository examinerRepository;
-    private final ExamRepository examRepository;
+    private final ExaminerValidator examinerValidator;
 
 
     @Override
     public ExaminerResponse createExaminer(ExaminerRequest request) {
-        if (examinerRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already exists");
-        }
+        examinerValidator.validateExaminerEmail(request.getEmail());
+        examinerValidator.validateExaminerPhoneNumber(request.getPhoneNumber());
 
         Examiner examiner = ExaminerMapper.toEntity(request);
         examinerRepository.save(examiner);
@@ -53,14 +51,10 @@ public class ExaminerServiceImpl implements ExaminerService{
         Examiner updatedExaminer = examinerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Examiner not found"));
         if (!updatedExaminer.getEmail().equals(request.getEmail())) {
-            if (examinerRepository.existsByEmail(request.getEmail())) {
-                throw new IllegalArgumentException("Email already exists");
+            examinerValidator.validateExaminerEmail(request.getEmail());
             }
-        }
         if (!updatedExaminer.getPhoneNumber().equals(request.getPhoneNumber())) {
-            if (examinerRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-                throw new IllegalArgumentException("Phone number already exists");
-            }
+            examinerValidator.validateExaminerPhoneNumber(request.getPhoneNumber());
         }
 
         updatedExaminer.setName(request.getName());
@@ -75,13 +69,8 @@ public class ExaminerServiceImpl implements ExaminerService{
     public ExaminerResponse inactiveExaminer(String id){
         Examiner examiner = examinerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Teacher not found"));
-        List<Exam> assignedExams = examRepository.findByAssignedExaminerId(id);
-        if (!assignedExams.isEmpty()) {
-            String assignedExamIds = assignedExams.stream()
-                    .map(Exam::getId)
-                    .collect(Collectors.joining(", "));
-            throw new IllegalStateException("Examiner is assigned to exam(s): " + assignedExamIds);
-        }
+        examinerValidator.validateExaminerNotAssignedToExams(id);
+
         examiner.setActive(false);
         examinerRepository.save(examiner);
         return ExaminerMapper.toResponse(examiner);

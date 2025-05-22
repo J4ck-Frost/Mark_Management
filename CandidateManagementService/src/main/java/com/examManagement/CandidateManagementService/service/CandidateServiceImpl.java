@@ -9,6 +9,7 @@ import com.examManagement.CandidateManagementService.entity.Candidate;
 import com.examManagement.CandidateManagementService.exception.ResourceNotFoundException;
 import com.examManagement.CandidateManagementService.mapper.CandidateMapper;
 import com.examManagement.CandidateManagementService.repository.CandidateRepository;
+import com.examManagement.CandidateManagementService.validator.CandidateValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class CandidateServiceImpl implements CandidateService{
     private final KafkaTemplate<String, String > kafkaTemplate;
     private final CandidateRepository candidateRepository;
     private final ExamServiceClient examServiceClient;
+    private final CandidateValidator candidateValidator;
 
     @Override
     public List<CandidateResponse> getAllCandidates() {
@@ -42,26 +44,23 @@ public class CandidateServiceImpl implements CandidateService{
         if (candidateRepository.existsByIdCard(request.getIdCard())) {
             Candidate candidate = candidateRepository.findByIdCard(request.getIdCard());
             if (isCandidateInfoChanged(candidate, request)) {
-                CandidateResponse candidateResponse = updateCandidateInfo(candidate.getId(), CandidateMapper.toUpdateRequest(request));
-                sendKafkaEvent(candidate.getId(), request.getExamId(), "exam-registration-events");
-                return candidateResponse;
-            } else {
-                List<String> listExamIds = candidate.getExamIds();
-                listExamIds.add(request.getExamId());
-                candidate.setExamIds(listExamIds);
-                candidateRepository.save(candidate);
-                sendKafkaEvent(candidate.getId(), request.getExamId(), "exam-registration-events");
-                return CandidateMapper.toResponse(candidate);
+                CandidateMapper.updateFromRequest(candidate, CandidateMapper.toUpdateRequest(request));
             }
+            if (!candidate.getExamIds().add(request.getExamId())) {
+                throw new IllegalStateException("Candidate is already registered for this exam");
+            }
+            candidateRepository.save(candidate);
+            sendKafkaEvent(candidate.getId(), request.getExamId(), "exam-registration-events");
+            return CandidateMapper.toResponse(candidate);
         }
         // Nếu ứng viên chưa tồn tại
+        candidateValidator.validateCandidatePhoneNumber(request.getPhoneNumber());
+        candidateValidator.validateCandidateEmail(request.getEmail());
         Candidate candidate = CandidateMapper.toEntity(request);
         candidateRepository.save(candidate);
         sendKafkaEvent(candidate.getId(), request.getExamId(), "exam-registration-events");
         return CandidateMapper.toResponse(candidate);
     }
-
-
 
     @Override
     public CandidateResponse unregisterCandidate(String examId, String candidateId){
@@ -74,12 +73,9 @@ public class CandidateServiceImpl implements CandidateService{
         }
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
-        List<String> listExamIds = candidate.getExamIds();
-        if (!listExamIds.contains(examId)) {
+        if (!candidate.getExamIds().remove(examId)) {
             throw new IllegalArgumentException("Candidate is not registered for this exam");
         }
-        listExamIds.remove(examId);
-        candidate.setExamIds(listExamIds);
         candidateRepository.save(candidate);
         sendKafkaEvent(candidateId, examId, "exam-unregistration-events");
         return CandidateMapper.toResponse(candidate);
@@ -100,20 +96,13 @@ public class CandidateServiceImpl implements CandidateService{
                 candidateRepository.existsByIdCard(request.getIdCard())) {
             throw new IllegalArgumentException("Id card already exists");
         }
-        if (!updatedCandidate.getEmail().equals(request.getEmail()) &&
-                candidateRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already exists");
+        if (!updatedCandidate.getEmail().equals(request.getEmail())) {
+            candidateValidator.validateCandidateEmail(request.getEmail());
         }
-        if (!updatedCandidate.getPhoneNumber().equals(request.getPhoneNumber()) &&
-                candidateRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new IllegalArgumentException("Phone Number already exists");
+        if (!updatedCandidate.getPhoneNumber().equals(request.getPhoneNumber())){
+            candidateValidator.validateCandidatePhoneNumber(request.getPhoneNumber());
         }
-
-        updatedCandidate.setIdCard(request.getIdCard());
-        updatedCandidate.setFullName(request.getFullName());
-        updatedCandidate.setPhoneNumber(request.getPhoneNumber());
-        updatedCandidate.setEmail(request.getEmail());
-        updatedCandidate.setGender(request.isGender());
+        CandidateMapper.updateFromRequest(updatedCandidate, request);
         candidateRepository.save(updatedCandidate);
         return CandidateMapper.toResponse(updatedCandidate);
     }

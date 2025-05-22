@@ -2,6 +2,7 @@ package com.examManagement.MarkManagementService.client;
 
 import com.examManagement.MarkManagementService.dto.ExamResponse;
 import com.examManagement.MarkManagementService.exception.ResourceNotFoundException;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;

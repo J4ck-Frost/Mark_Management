@@ -41,9 +41,6 @@ public class MarkServiceImpl implements MarkService{
 
         String candidateId = parts[0];
         String examId = parts[1];
-        if (markRepository.existsByCandidateIdAndExamId(candidateId, examId)){
-            throw new IllegalArgumentException("Candidate is already registered for this exam");
-        }
         Mark mark= new Mark();
         mark.setCandidateId(candidateId);
         mark.setExamId(examId);
@@ -75,14 +72,14 @@ public class MarkServiceImpl implements MarkService{
 
     @Override
     public List<MarkResponse> findMarkByExaminerId(String examinerId) {
-        return markRepository.findMarkByExamId(examinerId).stream()
+        return markRepository.findMarkByExaminerId(examinerId).stream()
                 .map(MarkMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<MarkResponse> findMarkByCandidateId(String candidateId) {
-        return markRepository.findMarkByExamId(candidateId).stream()
+        return markRepository.findMarkByCandidateId(candidateId).stream()
                 .map(MarkMapper::toResponse)
                 .collect(Collectors.toList());
     }
@@ -119,7 +116,7 @@ public class MarkServiceImpl implements MarkService{
             topics = "exam-complete-events",
             groupId = "mark-service-group"
     )
-    private List<MarkResponse> finalizeMarkByExamId(String message) {
+    public List<MarkResponse> finalizeMarkByExamId(String message) {
         System.out.println("Nhận complete exam event: " + message);
         List<Mark> markList = markRepository.findMarkByExamId(message);
         LocalDateTime now = LocalDateTime.now();
@@ -160,6 +157,7 @@ public class MarkServiceImpl implements MarkService{
 
     @Override
     public boolean checkAllFinalizedMarkByExamId(String examId){
+        ExamResponse exam = examServiceClient.getExamById(examId);
         return markRepository.existsByExamIdAndFinalizedFalse(examId);
     }
 
@@ -167,6 +165,6 @@ public class MarkServiceImpl implements MarkService{
     public void deleteMark(String id) {
         Mark mark = markRepository.findById(id)
                 .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
-        markRepository.deleteById(id);
+        markRepository.delete(mark);
     }
 }

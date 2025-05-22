@@ -1,6 +1,5 @@
 package com.examManagement.ExamAdministrationService.dto;
 
-import com.examManagement.ExamAdministrationService.entity.ExamStatus;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
