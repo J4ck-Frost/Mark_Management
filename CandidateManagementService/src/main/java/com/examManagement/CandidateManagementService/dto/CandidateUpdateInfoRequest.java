@@ -8,22 +8,20 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CandidateRequest {
-    @Pattern(regexp = "\\d{12}")
+public class CandidateUpdateInfoRequest {
+    @Pattern(regexp = "\\d{10}")
+    @Size(max = 12, message = "ID card must be at most 12 characters")
     private String idCard;
     @NotBlank(message = "Full name cannot be blank")
     private String fullName;
     @Pattern(regexp = "\\d{10}")
     @NotBlank(message = "Phone number cannot be blank")
     private String phoneNumber;
-    @Email (message = "wrong email format")
+    @Email(message = "wrong email format")
     @NotBlank (message = "Email cannot be blank")
     private String email;
     private boolean gender;
-    private String examId;
 }

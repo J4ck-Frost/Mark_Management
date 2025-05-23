@@ -20,4 +20,5 @@ public class Examiner {
     private String email;
     @Pattern(regexp = "\\d{10}")
     private String phoneNumber;
+    private boolean isActive = true;
 }

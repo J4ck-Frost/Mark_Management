@@ -2,6 +2,7 @@ package com.examManagement.CandidateManagementService.controller;
 
 import com.examManagement.CandidateManagementService.dto.CandidateRequest;
 import com.examManagement.CandidateManagementService.dto.CandidateResponse;
+import com.examManagement.CandidateManagementService.dto.CandidateUpdateInfoRequest;
 import com.examManagement.CandidateManagementService.service.CandidateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,14 +18,16 @@ public class CandidateController {
 
         private final CandidateService candidateService;
 
+
         @GetMapping
         public ResponseEntity<List<CandidateResponse>> getAllCandidates() {
             return ResponseEntity.ok(candidateService.getAllCandidates());
         }
 
-        @PostMapping
+        @PostMapping("/register")
         public ResponseEntity<CandidateResponse> registerCandidate(@Valid @RequestBody CandidateRequest request) {
-            return ResponseEntity.ok(candidateService.registerCandidate(request));
+            CandidateResponse candidate = candidateService.registerCandidate(request);
+            return ResponseEntity.ok(candidate);
         }
 
         @GetMapping("/{id}")
@@ -33,10 +36,14 @@ public class CandidateController {
         }
 
         @PutMapping("/{id}")
-        public ResponseEntity<CandidateResponse> updateCandidate(@PathVariable String id, @Valid @RequestBody CandidateRequest request) {
-            return ResponseEntity.ok(candidateService.updateCandidate(id, request));
+        public ResponseEntity<CandidateResponse> updateCandidate(@PathVariable String id, @Valid @RequestBody CandidateUpdateInfoRequest request) {
+            return ResponseEntity.ok(candidateService.updateCandidateInfo(id, request));
         }
 
+        @PutMapping("/{examId}/{candidateId}/unregister")
+        public ResponseEntity<CandidateResponse> unregisterCandidate(@PathVariable String examId, @PathVariable String candidateId) {
+            return ResponseEntity.ok(candidateService.unregisterCandidate(examId, candidateId));
+        }
         @DeleteMapping("/{id}")
         public ResponseEntity<Void> deleteCandidate(@PathVariable String id) {
             candidateService.deleteCandidate(id);

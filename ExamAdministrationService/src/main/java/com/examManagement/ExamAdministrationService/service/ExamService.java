@@ -12,13 +12,10 @@ public interface ExamService {
     ExamResponse updateExam(String id, ExamRequest request);
     void deleteExam(String id);
     List<ExamResponse> getExamsByExaminerId(String examinerId);
-    ExamResponse addExaminerToExam(String examId, String examinerId);
-    ExamResponse removeExaminerFromExam(String examId, String examinerId);
     ExamResponse publishExam(String examId);
-    ExamResponse completeExam(String examId);
+    ExamResponse scoreExam(String id);
+    ExamResponse completeExam(String id);
     ExamResponse cancelExam(String examId);
-
     ExamResponse revertToDraft(String examId);
-
     List<ExamResponse> batchPublishExams(List<String> examIds);
 }

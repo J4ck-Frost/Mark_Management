@@ -42,9 +42,8 @@ public class ExaminerController {
         return ResponseEntity.ok(examinerService.updateExaminer(id, request));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteExaminer(@PathVariable String id) {
-        examinerService.deleteExaminer(id);
-        return ResponseEntity.noContent().build();
+    @PutMapping("/{id}/inactive")
+    public ResponseEntity<ExaminerResponse> inactiveExaminer(@PathVariable String id){
+        return ResponseEntity.ok(examinerService.inactiveExaminer(id));
     }
 }

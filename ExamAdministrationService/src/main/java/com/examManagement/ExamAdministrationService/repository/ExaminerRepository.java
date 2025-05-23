@@ -10,4 +10,5 @@ public interface ExaminerRepository extends MongoRepository<Examiner, String> {
     boolean existsByEmail(String email);
     boolean existsByPhoneNumber(String phoneNumber);
     boolean existsById(String id);
+    boolean existsByIdAndActiveTrue(String id);
 }

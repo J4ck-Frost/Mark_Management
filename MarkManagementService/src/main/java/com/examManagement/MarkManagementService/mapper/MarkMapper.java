@@ -9,9 +9,7 @@ import java.time.LocalDateTime;
 public class MarkMapper {
     public static Mark toEntity(MarkRequest request) {
         Mark mark = new Mark();
-        mark.setCandidateId(request.getCandidateId());
         mark.setExaminerId(request.getExaminerId());
-        mark.setExamId(request.getExamId());
         mark.setRegisteredAt(LocalDateTime.now());
         mark.setFinalized(false);
         return mark;

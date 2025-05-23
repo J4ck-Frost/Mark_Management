@@ -25,7 +25,7 @@ public class ExamMapper {
         response.setDuration(exam.getDuration());
         response.setDescription(exam.getDescription());
         response.setAssignedExaminerId(exam.getAssignedExaminerId());
-        response.setStatus(exam.getStatus());
+        response.setStatus(String.valueOf(exam.getStatus()));
         response.setLocation(exam.getLocation());
         return response;
     }

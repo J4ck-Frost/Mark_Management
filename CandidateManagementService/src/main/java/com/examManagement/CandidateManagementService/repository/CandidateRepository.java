@@ -10,4 +10,6 @@ public interface CandidateRepository extends MongoRepository<Candidate, String> 
     boolean existsByEmail(String email);
     boolean existsByPhoneNumber(String phoneNumber);
     boolean existsById(String id );
+    boolean existsByIdCard(String idCard);
+    Candidate findByIdCard(String idCard);
 }
