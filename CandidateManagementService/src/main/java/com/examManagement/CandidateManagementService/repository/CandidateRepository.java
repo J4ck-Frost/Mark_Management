@@ -4,6 +4,7 @@ import com.examManagement.CandidateManagementService.entity.Candidate;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface CandidateRepository extends MongoRepository<Candidate, String> {
     List<Candidate> findByFullName(String fullName);
@@ -11,5 +12,5 @@ public interface CandidateRepository extends MongoRepository<Candidate, String> 
     boolean existsByPhoneNumber(String phoneNumber);
     boolean existsById(String id );
     boolean existsByIdCard(String idCard);
-    Candidate findByIdCard(String idCard);
+    Optional<Candidate> findByIdCard(String idCard);
 }

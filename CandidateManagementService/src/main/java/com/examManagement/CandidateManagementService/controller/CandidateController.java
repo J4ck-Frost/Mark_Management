@@ -2,7 +2,6 @@ package com.examManagement.CandidateManagementService.controller;
 
 import com.examManagement.CandidateManagementService.dto.CandidateRequest;
 import com.examManagement.CandidateManagementService.dto.CandidateResponse;
-import com.examManagement.CandidateManagementService.dto.CandidateUpdateInfoRequest;
 import com.examManagement.CandidateManagementService.service.CandidateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +23,9 @@ public class CandidateController {
             return ResponseEntity.ok(candidateService.getAllCandidates());
         }
 
-        @PostMapping("/register")
-        public ResponseEntity<CandidateResponse> registerCandidate(@Valid @RequestBody CandidateRequest request) {
-            CandidateResponse candidate = candidateService.registerCandidate(request);
+        @PostMapping("/register/{examId}")
+        public ResponseEntity<CandidateResponse> registerCandidate(@PathVariable String examId, @Valid @RequestBody CandidateRequest request) {
+            CandidateResponse candidate = candidateService.registerCandidate(examId, request);
             return ResponseEntity.ok(candidate);
         }
 
@@ -36,11 +35,11 @@ public class CandidateController {
         }
 
         @PutMapping("/{id}")
-        public ResponseEntity<CandidateResponse> updateCandidate(@PathVariable String id, @Valid @RequestBody CandidateUpdateInfoRequest request) {
+        public ResponseEntity<CandidateResponse> updateCandidate(@PathVariable String id, @Valid @RequestBody CandidateRequest request) {
             return ResponseEntity.ok(candidateService.updateCandidateInfo(id, request));
         }
 
-        @PutMapping("/{examId}/{candidateId}/unregister")
+        @PutMapping("/{candidateId}/unregister/{examId}")
         public ResponseEntity<CandidateResponse> unregisterCandidate(@PathVariable String examId, @PathVariable String candidateId) {
             return ResponseEntity.ok(candidateService.unregisterCandidate(examId, candidateId));
         }

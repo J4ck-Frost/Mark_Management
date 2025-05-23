@@ -4,6 +4,7 @@ import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.UniqueElements;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +29,7 @@ public class ExamRequest {
 
     @NotNull(message = "Examiner IDs list cannot be null")
     @NotEmpty(message = "Examiner IDs list cannot be empty")
+    @UniqueElements(message = "ExaminerIds list cannot contain 2 same items")
     private List<
             @NotBlank(message = "Examiner ID cannot be blank")
                     String

@@ -3,7 +3,6 @@ package com.examManagement.CandidateManagementService.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,5 +24,4 @@ public class CandidateRequest {
     @NotBlank (message = "Email cannot be blank")
     private String email;
     private boolean gender;
-    private String examId;
 }

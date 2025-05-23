@@ -3,7 +3,6 @@ package com.examManagement.CandidateManagementService.service;
 import com.examManagement.CandidateManagementService.client.ExamServiceClient;
 import com.examManagement.CandidateManagementService.dto.CandidateRequest;
 import com.examManagement.CandidateManagementService.dto.CandidateResponse;
-import com.examManagement.CandidateManagementService.dto.CandidateUpdateInfoRequest;
 import com.examManagement.CandidateManagementService.dto.ExamResponse;
 import com.examManagement.CandidateManagementService.entity.Candidate;
 import com.examManagement.CandidateManagementService.exception.ResourceNotFoundException;
@@ -15,8 +14,10 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,40 +28,53 @@ public class CandidateServiceImpl implements CandidateService{
     private final CandidateRepository candidateRepository;
     private final ExamServiceClient examServiceClient;
     private final CandidateValidator candidateValidator;
+    private final CandidateMapper candidateMapper;
 
     @Override
     public List<CandidateResponse> getAllCandidates() {
         return candidateRepository.findAll().stream()
-                .map(CandidateMapper::toResponse)
+                .map(candidateMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public CandidateResponse registerCandidate(CandidateRequest request) {
-        ExamResponse exam = examServiceClient.getExamById(request.getExamId());
+    public CandidateResponse registerCandidate(String examId, CandidateRequest request) {
+        ExamResponse exam = examServiceClient.getExamById(examId);
         if (!Objects.equals(exam.getStatus(), "PUBLISHED")) {
             throw new IllegalStateException("You can only register for a published exam.");
         }
-        if (candidateRepository.existsByIdCard(request.getIdCard())) {
-            Candidate candidate = candidateRepository.findByIdCard(request.getIdCard());
-            if (isCandidateInfoChanged(candidate, request)) {
-                CandidateMapper.updateFromRequest(candidate, CandidateMapper.toUpdateRequest(request));
+
+        Optional<Candidate> existingCandidateOpt = candidateRepository.findByIdCard(request.getIdCard());
+
+        Candidate candidate;
+
+        if (existingCandidateOpt.isPresent()) {
+            candidate = existingCandidateOpt.get();
+            candidateMapper.updateFromRequest(candidate, request);
+            List<String> examIds = candidate.getExamIds();
+            if (examIds != null && examIds.contains(examId)) {
+                throw new IllegalStateException("Candidate is already registered for this exam.");
             }
-            if (!candidate.getExamIds().add(request.getExamId())) {
-                throw new IllegalStateException("Candidate is already registered for this exam");
+
+            if (examIds == null) {
+                examIds = new ArrayList<>();
             }
-            candidateRepository.save(candidate);
-            sendKafkaEvent(candidate.getId(), request.getExamId(), "exam-registration-events");
-            return CandidateMapper.toResponse(candidate);
+            examIds.add(examId);
+            candidate.setExamIds(examIds);
+        } else {
+            // Ứng viên chưa tồn tại, validate trước khi tạo mới
+            candidateValidator.validateCandidatePhoneNumber(request.getPhoneNumber());
+            candidateValidator.validateCandidateEmail(request.getEmail());
+
+            candidate = candidateMapper.toEntity(request);
+            candidate.setExamIds(new ArrayList<>(List.of(examId)));
         }
-        // Nếu ứng viên chưa tồn tại
-        candidateValidator.validateCandidatePhoneNumber(request.getPhoneNumber());
-        candidateValidator.validateCandidateEmail(request.getEmail());
-        Candidate candidate = CandidateMapper.toEntity(request);
+
         candidateRepository.save(candidate);
-        sendKafkaEvent(candidate.getId(), request.getExamId(), "exam-registration-events");
-        return CandidateMapper.toResponse(candidate);
+        sendKafkaEvent(candidate.getId(), examId, "exam-registration-events");
+        return candidateMapper.toResponse(candidate);
     }
+
 
     @Override
     public CandidateResponse unregisterCandidate(String examId, String candidateId){
@@ -78,18 +92,18 @@ public class CandidateServiceImpl implements CandidateService{
         }
         candidateRepository.save(candidate);
         sendKafkaEvent(candidateId, examId, "exam-unregistration-events");
-        return CandidateMapper.toResponse(candidate);
+        return candidateMapper.toResponse(candidate);
     }
 
     @Override
     public CandidateResponse getCandidateById(String id) {
         Candidate candidate = candidateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
-        return CandidateMapper.toResponse(candidate);
+        return candidateMapper.toResponse(candidate);
     }
 
     @Override
-    public CandidateResponse updateCandidateInfo(String id, CandidateUpdateInfoRequest request) {
+    public CandidateResponse updateCandidateInfo(String id, CandidateRequest request) {
         Candidate updatedCandidate = candidateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
         if (!updatedCandidate.getIdCard().equals(request.getIdCard()) &&
@@ -102,9 +116,9 @@ public class CandidateServiceImpl implements CandidateService{
         if (!updatedCandidate.getPhoneNumber().equals(request.getPhoneNumber())){
             candidateValidator.validateCandidatePhoneNumber(request.getPhoneNumber());
         }
-        CandidateMapper.updateFromRequest(updatedCandidate, request);
+        candidateMapper.updateFromRequest(updatedCandidate, request);
         candidateRepository.save(updatedCandidate);
-        return CandidateMapper.toResponse(updatedCandidate);
+        return candidateMapper.toResponse(updatedCandidate);
     }
 
     @Override

@@ -3,30 +3,24 @@ package com.examManagement.ExamAdministrationService.Mapper;
 import com.examManagement.ExamAdministrationService.dto.ExamRequest;
 import com.examManagement.ExamAdministrationService.dto.ExamResponse;
 import com.examManagement.ExamAdministrationService.entity.Exam;
+import com.examManagement.ExamAdministrationService.entity.ExamStatus;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+
+@Mapper(componentModel = "spring")
+public interface ExamMapper {
 
 
-public class ExamMapper {
-    public static Exam toEntity(ExamRequest request) {
-        Exam exam = new Exam();
-        exam.setName(request.getName());
-        exam.setScheduledTime(request.getScheduledTime());
-        exam.setDuration(request.getDuration());
-        exam.setDescription(request.getDescription());
-        exam.setAssignedExaminerId(request.getAssignedExaminerId());
-        exam.setLocation(request.getLocation());
-        return exam;
-    }
+        @Mapping(target = "status", ignore = true) // We'll handle status separately in toResponse
+        @Mapping(target = "id", ignore = true)
+        Exam toEntity(ExamRequest request);
 
-    public static ExamResponse toResponse(Exam exam) {
-        ExamResponse response = new ExamResponse();
-        response.setId(exam.getId());
-        response.setName(exam.getName());
-        response.setScheduledTime(exam.getScheduledTime());
-        response.setDuration(exam.getDuration());
-        response.setDescription(exam.getDescription());
-        response.setAssignedExaminerId(exam.getAssignedExaminerId());
-        response.setStatus(String.valueOf(exam.getStatus()));
-        response.setLocation(exam.getLocation());
-        return response;
-    }
+        @Mapping(target = "status", source = "status", qualifiedByName = "statusToString")
+        ExamResponse toResponse(Exam exam);
+
+        @Named("statusToString")
+        default String statusToString(ExamStatus status) {
+            return status != null ? status.toString() : null;
+        }
 }

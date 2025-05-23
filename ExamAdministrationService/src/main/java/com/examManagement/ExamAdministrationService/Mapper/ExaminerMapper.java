@@ -3,23 +3,14 @@ package com.examManagement.ExamAdministrationService.Mapper;
 import com.examManagement.ExamAdministrationService.dto.ExaminerRequest;
 import com.examManagement.ExamAdministrationService.dto.ExaminerResponse;
 import com.examManagement.ExamAdministrationService.entity.Examiner;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-public class ExaminerMapper {
-    public static Examiner toEntity(ExaminerRequest request) {
-        Examiner examiner = new Examiner();
-        examiner.setName(request.getName());
-        examiner.setEmail(request.getEmail());
-        examiner.setPhoneNumber(request.getPhoneNumber());
-        return examiner;
-    }
+@Mapper(componentModel = "spring")
+public interface ExaminerMapper {
+    @Mapping(target = "active", constant = "true")
+    @Mapping(target = "id", ignore = true)
+    Examiner toEntity(ExaminerRequest request);
 
-    public static ExaminerResponse toResponse(Examiner examiner) {
-        ExaminerResponse response = new ExaminerResponse();
-        response.setId(examiner.getId());
-        response.setName(examiner.getName());
-        response.setEmail(examiner.getEmail());
-        response.setPhoneNumber(examiner.getPhoneNumber());
-        response.setActive(examiner.isActive());
-        return response;
-    }
+    ExaminerResponse toResponse(Examiner examiner);
 }

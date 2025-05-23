@@ -2,6 +2,7 @@ package com.examManagement.ExamAdministrationService.controller;
 
 import com.examManagement.ExamAdministrationService.dto.ExaminerRequest;
 import com.examManagement.ExamAdministrationService.dto.ExaminerResponse;
+import com.examManagement.ExamAdministrationService.dto.ExaminerUpdateRequest;
 import com.examManagement.ExamAdministrationService.service.ExaminerService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -38,7 +39,7 @@ public class ExaminerController {
     @PutMapping("/{id}")
     public ResponseEntity<ExaminerResponse> updateExaminer(
             @PathVariable String id,
-            @RequestBody @Valid ExaminerRequest request) {
+            @RequestBody @Valid ExaminerUpdateRequest request) {
         return ResponseEntity.ok(examinerService.updateExaminer(id, request));
     }
 

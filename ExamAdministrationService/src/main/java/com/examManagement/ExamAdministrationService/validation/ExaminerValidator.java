@@ -1,4 +1,4 @@
-package com.examManagement.ExamAdministrationService.validator;
+package com.examManagement.ExamAdministrationService.validation;
 
 import com.examManagement.ExamAdministrationService.entity.Exam;
 import com.examManagement.ExamAdministrationService.repository.ExamRepository;

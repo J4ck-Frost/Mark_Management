@@ -2,52 +2,25 @@ package com.examManagement.CandidateManagementService.mapper;
 
 import com.examManagement.CandidateManagementService.dto.CandidateRequest;
 import com.examManagement.CandidateManagementService.dto.CandidateResponse;
-import com.examManagement.CandidateManagementService.dto.CandidateUpdateInfoRequest;
 import com.examManagement.CandidateManagementService.entity.Candidate;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
-public class CandidateMapper {
-    public static Candidate toEntity(CandidateRequest request) {
-        Candidate candidate = new Candidate();
-        candidate.setIdCard(request.getIdCard());
-        candidate.setFullName(request.getFullName());
-        candidate.setEmail(request.getEmail());
-        candidate.setPhoneNumber(request.getPhoneNumber());
-        candidate.setGender(request.isGender());
-        Set<String> listExamIds = candidate.getExamIds();
-        listExamIds.add(request.getExamId());
-        candidate.setExamIds(listExamIds);
-        return candidate;
-    }
+@Mapper(componentModel = "spring")
+public interface CandidateMapper {
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "examIds", ignore = true)
+    Candidate toEntity(CandidateRequest request);
 
-    public static CandidateResponse toResponse(Candidate candidate) {
-        CandidateResponse response = new CandidateResponse();
-        response.setId(candidate.getId());
-        response.setIdCard(candidate.getIdCard());
-        response.setFullName(candidate.getFullName());
-        response.setEmail(candidate.getEmail());
-        response.setPhoneNumber(candidate.getPhoneNumber());
-        response.setGender(candidate.isGender());
-        response.setExamIds(candidate.getExamIds());
-        return response;
-    }
+    CandidateResponse toResponse(Candidate candidate);
 
-    public static CandidateUpdateInfoRequest toUpdateRequest(CandidateRequest request){
-        CandidateUpdateInfoRequest updateInfoRequest = new CandidateUpdateInfoRequest();
-        updateInfoRequest.setEmail(request.getEmail());
-        updateInfoRequest.setIdCard(request.getIdCard());
-        updateInfoRequest.setPhoneNumber(request.getPhoneNumber());
-        updateInfoRequest.setFullName(request.getFullName());
-        updateInfoRequest.setGender(request.isGender());
-        return  updateInfoRequest;
-    }
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "examIds", ignore = true)
+    void updateFromRequest(@MappingTarget Candidate candidate, CandidateRequest request);
 
-    public static void updateFromRequest(Candidate candidate, CandidateUpdateInfoRequest request){
-        candidate.setIdCard(request.getIdCard());
-        candidate.setFullName(request.getFullName());
-        candidate.setPhoneNumber(request.getPhoneNumber());
-        candidate.setEmail(request.getEmail());
-        candidate.setGender(request.isGender());
-    }
+
 }

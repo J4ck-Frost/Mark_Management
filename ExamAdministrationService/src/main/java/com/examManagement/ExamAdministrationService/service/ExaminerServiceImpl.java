@@ -3,10 +3,11 @@ package com.examManagement.ExamAdministrationService.service;
 import com.examManagement.ExamAdministrationService.Mapper.ExaminerMapper;
 import com.examManagement.ExamAdministrationService.dto.ExaminerRequest;
 import com.examManagement.ExamAdministrationService.dto.ExaminerResponse;
+import com.examManagement.ExamAdministrationService.dto.ExaminerUpdateRequest;
 import com.examManagement.ExamAdministrationService.entity.Examiner;
 import com.examManagement.ExamAdministrationService.exception.ResourceNotFoundException;
 import com.examManagement.ExamAdministrationService.repository.ExaminerRepository;
-import com.examManagement.ExamAdministrationService.validator.ExaminerValidator;
+import com.examManagement.ExamAdministrationService.validation.ExaminerValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,22 +21,20 @@ import java.util.stream.Collectors;
 public class ExaminerServiceImpl implements ExaminerService{
     private final ExaminerRepository examinerRepository;
     private final ExaminerValidator examinerValidator;
+    private final ExaminerMapper examinerMapper;
 
 
     @Override
     public ExaminerResponse createExaminer(ExaminerRequest request) {
-        examinerValidator.validateExaminerEmail(request.getEmail());
-        examinerValidator.validateExaminerPhoneNumber(request.getPhoneNumber());
-
-        Examiner examiner = ExaminerMapper.toEntity(request);
+        Examiner examiner = examinerMapper.toEntity(request);
         examinerRepository.save(examiner);
-        return ExaminerMapper.toResponse(examiner);
+        return examinerMapper.toResponse(examiner);
     }
 
     @Override
     public List<ExaminerResponse> getAllExaminers() {
         return examinerRepository.findAll().stream()
-                .map(ExaminerMapper::toResponse)
+                .map(examinerMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -43,11 +42,11 @@ public class ExaminerServiceImpl implements ExaminerService{
     public ExaminerResponse getExaminerById(String id) {
         Examiner examiner = examinerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Examiner not found"));
-        return ExaminerMapper.toResponse(examiner);
+        return examinerMapper.toResponse(examiner);
     }
 
     @Override
-    public ExaminerResponse updateExaminer(String id, ExaminerRequest request) {
+    public ExaminerResponse updateExaminer(String id, ExaminerUpdateRequest request) {
         Examiner updatedExaminer = examinerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Examiner not found"));
         if (!updatedExaminer.getEmail().equals(request.getEmail())) {
@@ -61,7 +60,7 @@ public class ExaminerServiceImpl implements ExaminerService{
         updatedExaminer.setEmail(request.getEmail());
         updatedExaminer.setPhoneNumber(request.getPhoneNumber());
         examinerRepository.save(updatedExaminer);
-        return ExaminerMapper.toResponse(updatedExaminer);
+        return examinerMapper.toResponse(updatedExaminer);
     }
 
 
@@ -73,7 +72,7 @@ public class ExaminerServiceImpl implements ExaminerService{
 
         examiner.setActive(false);
         examinerRepository.save(examiner);
-        return ExaminerMapper.toResponse(examiner);
+        return  examinerMapper.toResponse(examiner);
     }
 
     public void validateExaminerIds(List<String> examinerIds) {

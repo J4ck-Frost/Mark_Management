@@ -12,10 +12,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ExaminerRequest {
+public class ExaminerUpdateRequest {
     @NotBlank (message = "Name cannot be blank")
     private String name;
-    @UniqueEmail
     @NotBlank (message = "Email cannot be blank")
     @Email (message = "Wrong email format")
     private String email;

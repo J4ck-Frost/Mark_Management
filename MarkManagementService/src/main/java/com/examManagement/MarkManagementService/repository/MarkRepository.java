@@ -10,8 +10,10 @@ public interface MarkRepository extends MongoRepository<Mark, String> {
     List<Mark> findMarkByExamId(String examId);
     List<Mark> findMarkByCandidateId(String candidateId);
     List<Mark> findMarkByExaminerId(String examinerId);
+    List<Mark> findMarkByExamIdAndFinalizedFalse(String examId);
     Optional<Mark> findMarkByCandidateIdAndExamId(String candidateId, String examId);
     boolean existsByCandidateIdAndExamId(String candidateId, String examId);
     boolean existsByExamIdAndFinalizedFalse(String examId);
+
 
 }

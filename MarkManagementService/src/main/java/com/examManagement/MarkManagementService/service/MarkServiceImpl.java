@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 public class MarkServiceImpl implements MarkService{
     private final MarkRepository markRepository;
     private final ExamServiceClient examServiceClient;
+    private final MarkMapper markMapper;
 
     @KafkaListener(
             topics = "exam-registration-events",
@@ -52,7 +55,7 @@ public class MarkServiceImpl implements MarkService{
     @Override
     public List<MarkResponse> findAllMark() {
         return markRepository.findAll().stream()
-                .map(MarkMapper::toResponse)
+                .map(markMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -60,27 +63,27 @@ public class MarkServiceImpl implements MarkService{
     public MarkResponse findMarkById(String id) {
         Mark mark = markRepository.findById(id)
                 .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
-        return MarkMapper.toResponse(mark);
+        return markMapper.toResponse(mark);
     }
 
     @Override
     public List<MarkResponse> findMarkByExamId(String examId) {
         return markRepository.findMarkByExamId(examId).stream()
-                .map(MarkMapper::toResponse)
+                .map(markMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<MarkResponse> findMarkByExaminerId(String examinerId) {
         return markRepository.findMarkByExaminerId(examinerId).stream()
-                .map(MarkMapper::toResponse)
+                .map(markMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<MarkResponse> findMarkByCandidateId(String candidateId) {
         return markRepository.findMarkByCandidateId(candidateId).stream()
-                .map(MarkMapper::toResponse)
+                .map(markMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -88,7 +91,7 @@ public class MarkServiceImpl implements MarkService{
     public MarkResponse findMarkByCandidateIdAndExamId(String candidateId, String examId) {
         Mark mark = markRepository.findMarkByCandidateIdAndExamId(candidateId, examId)
                 .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
-        return MarkMapper.toResponse(mark);
+        return markMapper.toResponse(mark);
     }
 
     @Override
@@ -109,7 +112,7 @@ public class MarkServiceImpl implements MarkService{
         updatedMark.setScoredAt(LocalDateTime.now());
         updatedMark.setExaminerId(request.getExaminerId());
         markRepository.save(updatedMark);
-        return MarkMapper.toResponse(updatedMark);
+        return markMapper.toResponse(updatedMark);
     }
 
     @KafkaListener(
@@ -118,17 +121,19 @@ public class MarkServiceImpl implements MarkService{
     )
     public List<MarkResponse> finalizeMarkByExamId(String message) {
         System.out.println("Nhận complete exam event: " + message);
-        List<Mark> markList = markRepository.findMarkByExamId(message);
-        LocalDateTime now = LocalDateTime.now();
-        for (Mark mark : markList) {
-            if (!mark.isFinalized()) {
+        List<Mark> marks = markRepository.findMarkByExamIdAndFinalizedFalse(message);
+        if (marks.isEmpty()) {
+            return Collections.emptyList();
+        }
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+
+        for (Mark mark : marks) {
                 mark.setFinalized(true);
                 mark.setScoredAt(now);
-            }
         }
-        List<Mark> updatedMarks = markRepository.saveAll(markList);
+        List<Mark> updatedMarks = markRepository.saveAll(marks);
         return updatedMarks.stream()
-                .map(MarkMapper::toResponse)
+                .map(markMapper::toResponse)
                 .collect(Collectors.toList());
     }
 

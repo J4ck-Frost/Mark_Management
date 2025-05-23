@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -16,5 +16,5 @@ public class CandidateResponse {
     private String phoneNumber;
     private String email;
     private boolean gender;
-    private Set<String> examIds;
+    private List<String> examIds;
 }

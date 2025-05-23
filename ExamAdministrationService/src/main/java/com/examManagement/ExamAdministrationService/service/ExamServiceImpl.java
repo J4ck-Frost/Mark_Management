@@ -8,7 +8,7 @@ import com.examManagement.ExamAdministrationService.entity.ExamStatus;
 import com.examManagement.ExamAdministrationService.exception.ResourceNotFoundException;
 import com.examManagement.ExamAdministrationService.repository.ExamRepository;
 import com.examManagement.ExamAdministrationService.repository.ExaminerRepository;
-import com.examManagement.ExamAdministrationService.validator.ExamValidator;
+import com.examManagement.ExamAdministrationService.validation.ExamValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -31,19 +31,20 @@ public class ExamServiceImpl implements ExamService{
     private final ExaminerRepository examinerRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ExamValidator examValidator;
+    private final ExamMapper examMapper;
 
     @Override
     public ExamResponse createExam(ExamRequest request) {
         examinerService.validateExaminerIds(request.getAssignedExaminerId());
-        Exam createdExam = ExamMapper.toEntity(request);
+        Exam createdExam = examMapper.toEntity(request);
         examRepository.save(createdExam);
-        return ExamMapper.toResponse(createdExam);
+        return examMapper.toResponse(createdExam);
     }
 
     @Override
     public List<ExamResponse> getAllExams() {
         return examRepository.findAll().stream()
-                .map(ExamMapper::toResponse)
+                .map(examMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -54,7 +55,7 @@ public class ExamServiceImpl implements ExamService{
         Exam exam = examRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
         System.out.println("👉 GỌI EXAM SERVICE (CACHE): " + id);
-        return ExamMapper.toResponse(exam);
+        return examMapper.toResponse(exam);
     }
 
     @CachePut(value = "exam-info", key = "#id",
@@ -70,7 +71,7 @@ public class ExamServiceImpl implements ExamService{
         updatedExam.setDuration(request.getDuration());
         updateAssignedExaminer(updatedExam, request.getAssignedExaminerId());
         examRepository.save(updatedExam);
-        return ExamMapper.toResponse(updatedExam);
+        return examMapper.toResponse(updatedExam);
     }
 
     @CachePut(value = "exam-info", key = "#exam.id",
@@ -101,7 +102,7 @@ public class ExamServiceImpl implements ExamService{
     @Override
     public List<ExamResponse> getExamsByExaminerId(String examinerId) {
         return examRepository.findByAssignedExaminerId(examinerId).stream()
-                .map(ExamMapper::toResponse)
+                .map(examMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -118,7 +119,7 @@ public class ExamServiceImpl implements ExamService{
 
         exam.setStatus(ExamStatus.PUBLISHED);
         examRepository.save(exam);
-        return ExamMapper.toResponse(exam);
+        return examMapper.toResponse(exam);
     }
 
     @CachePut(value = "exam-info", key = "#id",
@@ -131,7 +132,7 @@ public class ExamServiceImpl implements ExamService{
 
         exam.setStatus(ExamStatus.SCORED);
         examRepository.save(exam);
-        return ExamMapper.toResponse(exam);
+        return examMapper.toResponse(exam);
     }
 
     @CachePut(value = "exam-info", key = "#id",
@@ -146,7 +147,7 @@ public class ExamServiceImpl implements ExamService{
         sendKafkaEvent(id, "exam-complete-events");
         exam.setStatus(ExamStatus.COMPLETED);
         examRepository.save(exam);
-        return ExamMapper.toResponse(exam);
+        return examMapper.toResponse(exam);
     }
 
     @CachePut(value = "exam-info", key = "#id",
@@ -160,7 +161,7 @@ public class ExamServiceImpl implements ExamService{
 
         exam.setStatus(ExamStatus.CANCELED);
         examRepository.save(exam);
-        return ExamMapper.toResponse(exam);
+        return examMapper.toResponse(exam);
     }
 
     @CachePut(value = "exam-info", key = "#id",
@@ -171,7 +172,7 @@ public class ExamServiceImpl implements ExamService{
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
         exam.setStatus(ExamStatus.DRAFT);
         examRepository.save(exam);
-        return ExamMapper.toResponse(exam);
+        return examMapper.toResponse(exam);
     }
 
     @Override
@@ -184,7 +185,7 @@ public class ExamServiceImpl implements ExamService{
             examRepository.saveAll(exams);
 
             return exams.stream()
-                    .map(ExamMapper::toResponse)
+                    .map(examMapper::toResponse)
                     .toList();
         }
 
