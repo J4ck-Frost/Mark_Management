@@ -12,7 +12,7 @@ import java.time.ZoneId;
 @Mapper(componentModel = "spring", imports = {LocalDateTime.class, ZoneId.class})
 public interface MarkMapper {
 
-    @Mapping(target = "registeredAt", expression = "java(LocalDateTime.now(ZoneId.of(\"Asia/Ho_Chi_Minh\"))")
+    @Mapping(target = "registeredAt", expression = "java(LocalDateTime.now(ZoneId.of(\"Asia/Ho_Chi_Minh\")))")
     @Mapping(target = "finalized", constant = "false")
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "candidateId", ignore = true)

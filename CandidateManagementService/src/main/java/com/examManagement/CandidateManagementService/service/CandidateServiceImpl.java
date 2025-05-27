@@ -10,7 +10,7 @@ import com.examManagement.CandidateManagementService.mapper.CandidateMapper;
 import com.examManagement.CandidateManagementService.repository.CandidateRepository;
 import com.examManagement.CandidateManagementService.validator.CandidateValidator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.kafka.core.KafkaTemplate;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,12 +23,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class CandidateServiceImpl implements CandidateService{
-    private final KafkaTemplate<String, String > kafkaTemplate;
     private final CandidateRepository candidateRepository;
     private final ExamServiceClient examServiceClient;
     private final CandidateValidator candidateValidator;
     private final CandidateMapper candidateMapper;
+    private final KafkaService kafkaService;
 
     @Override
     public List<CandidateResponse> getAllCandidates() {
@@ -71,7 +72,7 @@ public class CandidateServiceImpl implements CandidateService{
         }
 
         candidateRepository.save(candidate);
-        sendKafkaEvent(candidate.getId(), examId, "exam-registration-events");
+        kafkaService.sendKafkaEvent(candidate.getId(), examId, "exam-registration-events");
         return candidateMapper.toResponse(candidate);
     }
 
@@ -88,10 +89,10 @@ public class CandidateServiceImpl implements CandidateService{
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
         if (!candidate.getExamIds().remove(examId)) {
-            throw new IllegalArgumentException("Candidate is not registered for this exam");
+            throw new IllegalArgumentException("Candidate haven't registered for this exam");
         }
         candidateRepository.save(candidate);
-        sendKafkaEvent(candidateId, examId, "exam-unregistration-events");
+        kafkaService.sendKafkaEvent(candidateId, examId, "exam-unregistration-events");
         return candidateMapper.toResponse(candidate);
     }
 
@@ -128,19 +129,4 @@ public class CandidateServiceImpl implements CandidateService{
         candidateRepository.delete(candidate);
     }
 
-    private boolean isCandidateInfoChanged(Candidate candidate, CandidateRequest request) {
-        return !candidate.getFullName().equals(request.getFullName()) ||
-                !candidate.getEmail().equals(request.getEmail()) ||
-                !candidate.getPhoneNumber().equals(request.getPhoneNumber()) ||
-                candidate.isGender() != request.isGender();
-    }
-
-    private void sendKafkaEvent(String candidateId, String examId, String topic) {
-        try {
-            kafkaTemplate.send(topic, candidateId + ":" + examId);
-            System.out.println("✅ Đã gửi message vào Kafka topic.");
-        } catch (Exception ex) {
-            System.err.println("❌ Lỗi khi gửi Kafka: " + ex.getMessage());
-        }
-    }
 }

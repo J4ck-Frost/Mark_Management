@@ -10,6 +10,7 @@ import com.examManagement.ExamAdministrationService.repository.ExamRepository;
 import com.examManagement.ExamAdministrationService.repository.ExaminerRepository;
 import com.examManagement.ExamAdministrationService.validation.ExamValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -21,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -54,7 +56,7 @@ public class ExamServiceImpl implements ExamService{
     public ExamResponse getExamById(String id) {
         Exam exam = examRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
-        System.out.println("👉 GỌI EXAM SERVICE (CACHE): " + id);
+        log.info("👉 GỌI EXAM SERVICE (CACHE): {}" , id);
         return examMapper.toResponse(exam);
     }
 
@@ -192,9 +194,9 @@ public class ExamServiceImpl implements ExamService{
     private void sendKafkaEvent(String examId, String topic) {
         try {
             kafkaTemplate.send(topic, examId);
-            System.out.println("✅ Đã gửi message vào Kafka topic.");
+            log.info("✅ Kafka event sent successfully to topic {} with data: {}", topic, examId);
         } catch (Exception ex) {
-            System.err.println("❌ Lỗi khi gửi Kafka: " + ex.getMessage());
+            log.error("❌ Failed to send Kafka event to topic {}. Error: {}", topic, ex.getMessage(), ex);
         }
     }
 }

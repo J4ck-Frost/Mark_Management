@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/CandidateManagementService/ExamManagement.CandidateManagementService.iml" filepath="$PROJECT_DIR$/.idea/modules/CandidateManagementService/ExamManagement.CandidateManagementService.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/CandidateManagementService/ExamManagement.CandidateManagementService.main.iml" filepath="$PROJECT_DIR$/.idea/modules/CandidateManagementService/ExamManagement.CandidateManagementService.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ExamAdministrationService/ExamManagement.ExamAdministrationService.iml" filepath="$PROJECT_DIR$/.idea/modules/ExamAdministrationService/ExamManagement.ExamAdministrationService.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ExamAdministrationService/ExamManagement.ExamAdministrationService.main.iml" filepath="$PROJECT_DIR$/.idea/modules/ExamAdministrationService/ExamManagement.ExamAdministrationService.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/MarkManagementService/ExamManagement.MarkManagementService.iml" filepath="$PROJECT_DIR$/.idea/modules/MarkManagementService/ExamManagement.MarkManagementService.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/MarkManagementService/ExamManagement.MarkManagementService.main.iml" filepath="$PROJECT_DIR$/.idea/modules/MarkManagementService/ExamManagement.MarkManagementService.main.iml" />
+    </modules>
+  </component>
+</project>

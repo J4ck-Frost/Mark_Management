@@ -1,0 +1,6 @@
+rootProject.name = 'ExamManagement'
+
+include ':CandidateManagementService'
+include ':ExamAdministrationService'
+include ':MarkManagementService'
+include ':common'

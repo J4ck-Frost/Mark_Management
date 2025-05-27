@@ -8,7 +8,9 @@ import com.examManagement.MarkManagementService.entity.Mark;
 import com.examManagement.MarkManagementService.exception.ResourceNotFoundException;
 import com.examManagement.MarkManagementService.mapper.MarkMapper;
 import com.examManagement.MarkManagementService.repository.MarkRepository;
+import examManagement.common.dto.CandidateEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -32,24 +35,17 @@ public class MarkServiceImpl implements MarkService{
             topics = "exam-registration-events",
             groupId = "mark-service-group"
     )
-    @Override
-    public void registerMark(String message) {
-        System.out.println("Nhận event: " + message); // Log để debug
+    public void registerMark(CandidateEvent event) {
+        log.info("Nhận event: {}", event); // Log để debug
 
-        String[] parts = message.split(":");
-        if (parts.length != 2) {
-            System.err.println("Message không hợp lệ: " + message);
-            return;
-        }
-
-        String candidateId = parts[0];
-        String examId = parts[1];
+        String candidateId = event.candidateId();
+        String examId = event.examId();
         Mark mark= new Mark();
         mark.setCandidateId(candidateId);
         mark.setExamId(examId);
         mark.setRegisteredAt(LocalDateTime.now());
         markRepository.save(mark);
-        System.out.println("Đã tạo đăng ký kì thi thành công");
+        log.info("Register for this exam successfully");
     }
 
     @Override
@@ -120,7 +116,7 @@ public class MarkServiceImpl implements MarkService{
             groupId = "mark-service-group"
     )
     public List<MarkResponse> finalizeMarkByExamId(String message) {
-        System.out.println("Nhận complete exam event: " + message);
+        log.info("Nhận complete exam event: {}" , message);
         List<Mark> marks = markRepository.findMarkByExamIdAndFinalizedFalse(message);
         if (marks.isEmpty()) {
             return Collections.emptyList();
@@ -141,23 +137,18 @@ public class MarkServiceImpl implements MarkService{
             topics = "exam-unregistration-events",
             groupId = "mark-service-group"
     )
-    private void deleteKafkaMark(String message) {
-        System.out.println("Nhận unregistration event: " + message);
+    public void deleteKafkaMark(CandidateEvent event) {
+        log.info("Nhận unregistration event: {}",  event);
 
-        String[] parts = message.split(":");
-        if (parts.length != 2) {
-            System.err.println("Message không hợp lệ: " + message);
-            return;
-        }
 
-        String candidateId = parts[0];
-        String examId = parts[1];
+        String candidateId = event.candidateId();
+        String examId = event.examId();
 
         Mark mark= markRepository.findMarkByCandidateIdAndExamId(candidateId, examId)
-                .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
+                .orElseThrow(()-> new ResourceNotFoundException("You haven't registered for this exam"));
 
         markRepository.delete(mark);
-        System.out.println("Đã hủy đăng ký thành công");
+        log.info("Unregister this event successfully");
     }
 
     @Override
