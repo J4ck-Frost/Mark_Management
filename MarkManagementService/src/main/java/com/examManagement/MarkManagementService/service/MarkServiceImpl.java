@@ -9,6 +9,7 @@ import com.examManagement.MarkManagementService.exception.ResourceNotFoundExcept
 import com.examManagement.MarkManagementService.mapper.MarkMapper;
 import com.examManagement.MarkManagementService.repository.MarkRepository;
 import examManagement.common.dto.CandidateEvent;
+import examManagement.common.dto.ExamEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -112,12 +113,13 @@ public class MarkServiceImpl implements MarkService{
     }
 
     @KafkaListener(
-            topics = "exam-complete-events",
+            topics = "exam-completion-events",
             groupId = "mark-service-group"
     )
-    public List<MarkResponse> finalizeMarkByExamId(String message) {
-        log.info("Nhận complete exam event: {}" , message);
-        List<Mark> marks = markRepository.findMarkByExamIdAndFinalizedFalse(message);
+    public List<MarkResponse> finalizeMarkByExamId(ExamEvent event) {
+        log.info("Nhận complete exam event: {}" , event);
+        String examId = event.examId();
+        List<Mark> marks = markRepository.findMarkByExamIdAndFinalizedFalse(examId);
         if (marks.isEmpty()) {
             return Collections.emptyList();
         }

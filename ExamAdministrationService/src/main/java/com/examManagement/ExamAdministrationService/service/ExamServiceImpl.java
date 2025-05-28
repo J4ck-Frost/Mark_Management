@@ -31,7 +31,7 @@ public class ExamServiceImpl implements ExamService{
     private final ExamRepository examRepository;
     private final ExaminerService examinerService;
     private final ExaminerRepository examinerRepository;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaService kafkaService;
     private final ExamValidator examValidator;
     private final ExamMapper examMapper;
 
@@ -146,7 +146,7 @@ public class ExamServiceImpl implements ExamService{
 
         examValidator.validateExamStatusForCompletion(exam);
 
-        sendKafkaEvent(id, "exam-complete-events");
+        kafkaService.sendKafkaEvent(id, "exam-completion-events");
         exam.setStatus(ExamStatus.COMPLETED);
         examRepository.save(exam);
         return examMapper.toResponse(exam);
@@ -191,12 +191,5 @@ public class ExamServiceImpl implements ExamService{
                     .toList();
         }
 
-    private void sendKafkaEvent(String examId, String topic) {
-        try {
-            kafkaTemplate.send(topic, examId);
-            log.info("✅ Kafka event sent successfully to topic {} with data: {}", topic, examId);
-        } catch (Exception ex) {
-            log.error("❌ Failed to send Kafka event to topic {}. Error: {}", topic, ex.getMessage(), ex);
-        }
-    }
+
 }
