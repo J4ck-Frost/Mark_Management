@@ -21,7 +21,6 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -53,13 +52,13 @@ public class MarkServiceImpl implements MarkService{
     public List<MarkResponse> findAllMark() {
         return markRepository.findAll().stream()
                 .map(markMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public MarkResponse findMarkById(String id) {
         Mark mark = markRepository.findById(id)
-                .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
+                .orElseThrow(()-> new ResourceNotFoundException("Mark not found: " + id));
         return markMapper.toResponse(mark);
     }
 
@@ -67,34 +66,34 @@ public class MarkServiceImpl implements MarkService{
     public List<MarkResponse> findMarkByExamId(String examId) {
         return markRepository.findMarkByExamId(examId).stream()
                 .map(markMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public List<MarkResponse> findMarkByExaminerId(String examinerId) {
         return markRepository.findMarkByExaminerId(examinerId).stream()
                 .map(markMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public List<MarkResponse> findMarkByCandidateId(String candidateId) {
         return markRepository.findMarkByCandidateId(candidateId).stream()
                 .map(markMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public MarkResponse findMarkByCandidateIdAndExamId(String candidateId, String examId) {
         Mark mark = markRepository.findMarkByCandidateIdAndExamId(candidateId, examId)
-                .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
+                .orElseThrow(()-> new ResourceNotFoundException("Cannot found any mark" ));
         return markMapper.toResponse(mark);
     }
 
     @Override
     public MarkResponse updateMark(String id, MarkRequest request) {
         Mark updatedMark = markRepository.findById(id)
-                .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
+                .orElseThrow(()-> new ResourceNotFoundException("Mark not found :" + id));
         ExamResponse exam = examServiceClient.getExamById(updatedMark.getExamId());
         if (Objects.equals(exam.getStatus(), "COMPLETED")) {
             throw new IllegalStateException("You cannot change mark for a completed exam.");
@@ -132,7 +131,7 @@ public class MarkServiceImpl implements MarkService{
         List<Mark> updatedMarks = markRepository.saveAll(marks);
         return updatedMarks.stream()
                 .map(markMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @KafkaListener(
@@ -155,14 +154,13 @@ public class MarkServiceImpl implements MarkService{
 
     @Override
     public boolean checkAllFinalizedMarkByExamId(String examId){
-        ExamResponse exam = examServiceClient.getExamById(examId);
         return markRepository.existsByExamIdAndFinalizedFalse(examId);
     }
 
     @Override
     public void deleteMark(String id) {
         Mark mark = markRepository.findById(id)
-                .orElseThrow(()-> new ResourceNotFoundException("Mark not found"));
+                .orElseThrow(()-> new ResourceNotFoundException("Mark not found: " + id));
         markRepository.delete(mark);
     }
 }

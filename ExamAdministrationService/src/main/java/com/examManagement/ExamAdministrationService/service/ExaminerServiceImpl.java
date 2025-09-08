@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +34,7 @@ public class ExaminerServiceImpl implements ExaminerService{
     public List<ExaminerResponse> getAllExaminers() {
         return examinerRepository.findAll().stream()
                 .map(examinerMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
